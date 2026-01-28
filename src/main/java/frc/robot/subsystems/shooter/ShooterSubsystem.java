@@ -15,8 +15,8 @@ public class ShooterSubsystem extends SubsystemBase {
   private final TalonFX hoodMotor = new TalonFX(22);
 
   // Create separate requests for every motor
-//   private final DutyCycleOut leadRequest = new DutyCycleOut(0);
-//   private final DutyCycleOut followerRequest = new DutyCycleOut(0);
+  //   private final DutyCycleOut leadRequest = new DutyCycleOut(0);
+  //   private final DutyCycleOut followerRequest = new DutyCycleOut(0);
   private final DutyCycleOut hoodRequest = new DutyCycleOut(0);
 
   private final VelocityVoltage leadRequest = new VelocityVoltage(0);
@@ -28,23 +28,23 @@ public class ShooterSubsystem extends SubsystemBase {
 
     var slot0Configs = new Slot0Configs();
     slot0Configs.kV = 0.37; // Feedforward (Volts per RPS) - Critical for velocity
-    slot0Configs.kV = 0.43; // Applied voltage
+    slot0Configs.kA = 0.43; // Applied voltage
     slot0Configs.kP = 0.89; // Proportional Gain (Error correction)
-    slot0Configs.kI = 0.0;  // Integral Gain
-    slot0Configs.kD = 0.0;  // Derivative Gain
-    
+    slot0Configs.kI = 0.0; // Integral Gain
+    slot0Configs.kD = 0.0; // Derivative Gain
+
     config.Slot0 = slot0Configs;
 
-    //Shooter Motor Config
+    // Shooter Motor Config
     config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     flywheelLead.getConfigurator().apply(config);
 
     config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
     flywheelFollower.getConfigurator().apply(config);
 
-    //Hood Config
+    // Hood Config
     var hoodConfig = new com.ctre.phoenix6.configs.TalonFXConfiguration();
-    hoodConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; 
+    hoodConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     hoodMotor.getConfigurator().apply(hoodConfig);
 
     // Set Neutral Modes
@@ -55,8 +55,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
   public void setFlywheel(double velocityRPS) {
     // Control both motors manually
-    flywheelLead.setControl(leadRequest.withVelocity(velocityRPS));
-    flywheelFollower.setControl(followerRequest.withVelocity(velocityRPS));
+    flywheelLead.setControl(leadRequest.withVelocity(velocityRPS * 100.0));
+    flywheelFollower.setControl(followerRequest.withVelocity(velocityRPS * 100.0));
   }
 
   public void setHood(double percent) {
