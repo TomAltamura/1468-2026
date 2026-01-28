@@ -12,6 +12,10 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 import frc.robot.subsystems.kicker.KickerSubsystem;
 import frc.robot.commands.Kick;
 
+import frc.robot.subsystems.harvester.HarvesterSubsystem;
+import frc.robot.commands.HarvesterDeploy;
+import frc.robot.commands.HarvesterSpin;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -50,6 +54,7 @@ public class RobotContainer {
   private final ShooterSubsystem shooter;
   private final Vision vision;
   private final KickerSubsystem kicker;
+  private final HarvesterSubsystem harvester;
 
   // Controller
   final Joystick driverRightJoystick = new Joystick(1);
@@ -65,6 +70,7 @@ public class RobotContainer {
 
     shooter = new ShooterSubsystem();
     kicker = new KickerSubsystem();
+    harvester = new HarvesterSubsystem();
 
     switch (Constants.currentMode) {
       case REAL:
@@ -168,10 +174,15 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
 
+    //TODO: Decide on final button mappings
     final JoystickButton resetGyro = new JoystickButton(driverRightJoystick, 7);
     final JoystickButton lockToZero = new JoystickButton(driverRightJoystick, 9);
     final JoystickButton shoot = new JoystickButton(operatorJoystick, 1);
     final JoystickButton kick = new JoystickButton(operatorJoystick, 2);
+    final JoystickButton harvesterDeploy = new JoystickButton(operatorJoystick, 3);
+    final JoystickButton harvesterSpin = new JoystickButton(operatorJoystick, 4);
+
+
 
     // Default command, normal field-relative drive
     drive.setDefaultCommand(
@@ -209,6 +220,14 @@ public class RobotContainer {
     // Kicker
     kick.whileTrue(
         new Kick(kicker));
+
+    // Harvester Deploy
+    harvesterDeploy.whileTrue(
+        new HarvesterDeploy(harvester));
+
+    // Harvester Spin
+    harvesterSpin.whileTrue(
+        new HarvesterSpin(harvester));
   }
 
   /**

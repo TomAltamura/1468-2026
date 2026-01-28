@@ -11,8 +11,6 @@ import frc.robot.Constants.Kicker;
 public class KickerSubsystem extends SubsystemBase {
 
   private final TalonFX kickerMotor = new TalonFX(Kicker.KICKER_MOTOR_ID);
-  // Gear reduction (currently 1:1)
-  private static final double GEAR_REDUCTION = 1.0;
 
   private final VelocityVoltage velocityRequest = new VelocityVoltage(0);
 
@@ -42,7 +40,7 @@ public class KickerSubsystem extends SubsystemBase {
    */
   public void setVelocity(double velocityRPS) {
     // Convert wheel RPS to motor RPS using gear reduction
-    double motorRPS = velocityRPS * GEAR_REDUCTION;
+    double motorRPS = velocityRPS * Kicker.KICKER_GEAR_RATIO;
     kickerMotor.setControl(velocityRequest.withVelocity(motorRPS));
   }
 

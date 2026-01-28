@@ -40,6 +40,16 @@ public final class Constants {
   public static final class Kicker {
     public static final int KICKER_MOTOR_ID = 30;
     public static final double KICKER_TARGET_RPS = 30.0;
+    public static final double KICKER_GEAR_RATIO = 1.0; // NEED TO INSERT
   }
+
+  public static final class Harvester {
+    public static final int DEPLOY_MOTOR_ID = 40;
+    public static final int SPIN_MOTOR_ID = 41;
+    public static final double DEPLOY_GEAR_RATIO = 1.0; // NEED TO INSERT
+    public static final double SPIN_GEAR_RATIO = 1.0; // NEED TO INSERT
+    public static final double DEPLOY_TARGET_POSITION = 10.0; // NEED TO INSERT
+    public static final double SPIN_TARGET_RPS = 20.0; // NEED TO INSERT
+}
 
 }
