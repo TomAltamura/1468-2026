@@ -9,7 +9,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.Shooter;
@@ -41,7 +40,8 @@ public class ShooterSubsystem extends SubsystemBase {
     flywheelLead.setNeutralMode(NeutralModeValue.Coast);
 
     // Follower config
-    flywheelFollower.setControl(new Follower(flywheelLead.getDeviceID(), MotorAlignmentValue.Opposed));
+    flywheelFollower.setControl(
+        new Follower(flywheelLead.getDeviceID(), MotorAlignmentValue.Opposed));
     flywheelFollower.setNeutralMode(NeutralModeValue.Coast);
 
     // Hood config (positional PID or velocity, brake mode, soft stops)
@@ -70,7 +70,8 @@ public class ShooterSubsystem extends SubsystemBase {
     turretConfig.Slot0 = turretSlot0;
     turretConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     turretConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-    turretConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Shooter.TURRET_RIGHT_SOFT_LIMIT_ROT;
+    turretConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
+        Shooter.TURRET_RIGHT_SOFT_LIMIT_ROT;
     turretConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
     turretConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = Shooter.TURRET_LEFT_SOFT_LIMIT_ROT;
     turretMotor.getConfigurator().apply(turretConfig);
@@ -99,11 +100,11 @@ public class ShooterSubsystem extends SubsystemBase {
     double motorRPS = rps * Shooter.HOOD_GEAR_RATIO;
     hoodMotor.setControl(hoodVelocityRequest.withVelocity(motorRPS));
   }
-// Turret position (rotations at output)
+  // Turret position (rotations at output)
   public void setTurretPosition(double rotations) {
-  double motorRotations = rotations * Shooter.TURRET_GEAR_RATIO;
-  turretMotor.setControl(new PositionVoltage(motorRotations));
-}
+    double motorRotations = rotations * Shooter.TURRET_GEAR_RATIO;
+    turretMotor.setControl(new PositionVoltage(motorRotations));
+  }
 
   // Turret velocity (RPS at output)
   public void setTurretVelocity(double rps) {
@@ -120,17 +121,27 @@ public class ShooterSubsystem extends SubsystemBase {
 
   public void log() {
     // Flywheel
-    SmartDashboard.putNumber("Shooter Lead Velocity (RPS)", flywheelLead.getVelocity().getValueAsDouble());
-    SmartDashboard.putNumber("Shooter Follower Velocity (RPS)", flywheelFollower.getVelocity().getValueAsDouble());
+    SmartDashboard.putNumber(
+        "Shooter Lead Velocity (RPS)", flywheelLead.getVelocity().getValueAsDouble());
+    SmartDashboard.putNumber(
+        "Shooter Follower Velocity (RPS)", flywheelFollower.getVelocity().getValueAsDouble());
     SmartDashboard.putNumber("Shooter Lead Output", flywheelLead.get());
     SmartDashboard.putNumber("Shooter Follower Output", flywheelFollower.get());
-    
+
     // Hood
-    SmartDashboard.putNumber("Shooter Hood Position (rot, output)", hoodMotor.getPosition().getValueAsDouble() / Shooter.HOOD_GEAR_RATIO);
-    SmartDashboard.putNumber("Shooter Hood Velocity (RPS, output)", hoodMotor.getVelocity().getValueAsDouble() / Shooter.HOOD_GEAR_RATIO);
-   
+    SmartDashboard.putNumber(
+        "Shooter Hood Position (rot, output)",
+        hoodMotor.getPosition().getValueAsDouble() / Shooter.HOOD_GEAR_RATIO);
+    SmartDashboard.putNumber(
+        "Shooter Hood Velocity (RPS, output)",
+        hoodMotor.getVelocity().getValueAsDouble() / Shooter.HOOD_GEAR_RATIO);
+
     // Turret
-    SmartDashboard.putNumber("Shooter Turret Position (rot, output)", turretMotor.getPosition().getValueAsDouble() / Shooter.TURRET_GEAR_RATIO);
-    SmartDashboard.putNumber("Shooter Turret Velocity (RPS, output)", turretMotor.getVelocity().getValueAsDouble() / Shooter.TURRET_GEAR_RATIO);
-    }
+    SmartDashboard.putNumber(
+        "Shooter Turret Position (rot, output)",
+        turretMotor.getPosition().getValueAsDouble() / Shooter.TURRET_GEAR_RATIO);
+    SmartDashboard.putNumber(
+        "Shooter Turret Velocity (RPS, output)",
+        turretMotor.getVelocity().getValueAsDouble() / Shooter.TURRET_GEAR_RATIO);
+  }
 }

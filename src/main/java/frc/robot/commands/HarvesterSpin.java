@@ -5,25 +5,25 @@ import frc.robot.Constants;
 import frc.robot.subsystems.HarvesterSubsystem;
 
 public class HarvesterSpin extends Command {
-    private final HarvesterSubsystem harvester;
+  private final HarvesterSubsystem harvester;
 
-    public HarvesterSpin(HarvesterSubsystem harvester) {
-        this.harvester = harvester;
-        addRequirements(harvester);
-    }
+  public HarvesterSpin(HarvesterSubsystem harvester) {
+    this.harvester = harvester;
+    addRequirements(harvester);
+  }
 
-    @Override
-    public void execute() {
-        harvester.setSpinVelocity(Constants.Harvester.SPIN_TARGET_RPS);
-    }
+  @Override
+  public void execute() {
+    harvester.setSpinVelocity(Constants.Harvester.SPIN_TARGET_RPS);
+  }
 
-    @Override
-    public void end(boolean interrupted) {
-        harvester.stopSpin();
-    }
+  @Override
+  public void end(boolean interrupted) {
+    harvester.stopSpin();
+  }
 
-    @Override
-    public boolean isFinished() {
-        return false;
-    }
+  @Override
+  public boolean isFinished() {
+    return false;
+  }
 }
