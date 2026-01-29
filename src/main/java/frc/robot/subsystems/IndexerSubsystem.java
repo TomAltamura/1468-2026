@@ -1,4 +1,4 @@
-package frc.robot.subsystems.indexer;
+package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -6,6 +6,8 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.Indexer;
 
@@ -18,14 +20,19 @@ public class IndexerSubsystem extends SubsystemBase {
     public IndexerSubsystem() {
         var config = new com.ctre.phoenix6.configs.TalonFXConfiguration();
         var slot0 = new Slot0Configs();
-        slot0.kP = 1.0;
-        slot0.kI = 0.0;
-        slot0.kD = 0.0;
-        slot0.kV = 0.2;
+        slot0.kP = Indexer.kP;
+        slot0.kI = Indexer.kI;
+        slot0.kD = Indexer.kD;
+        slot0.kV = Indexer.kV;
         config.Slot0 = slot0;
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         motor.getConfigurator().apply(config);
         motor.setNeutralMode(NeutralModeValue.Brake);
+    }
+
+    @Override
+    public void periodic() {
+        log();
     }
 
     // Position control (rotations at output)
@@ -46,5 +53,10 @@ public class IndexerSubsystem extends SubsystemBase {
 
     public void stop() {
         motor.stopMotor();
+    }
+
+    public void log() {
+        SmartDashboard.putNumber("Indexer Position (rotations, output)", motor.getPosition().getValueAsDouble() / Indexer.GEAR_RATIO);
+        SmartDashboard.putNumber("Indexer Velocity (RPS, output)", motor.getVelocity().getValueAsDouble() / Indexer.GEAR_RATIO);
     }
 }

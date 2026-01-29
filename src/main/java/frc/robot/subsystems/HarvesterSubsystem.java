@@ -1,4 +1,4 @@
-package frc.robot.subsystems.harvester;
+package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -6,6 +6,8 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.Harvester;
 
@@ -21,10 +23,10 @@ public class HarvesterSubsystem extends SubsystemBase {
         // Deploy motor config (position/velocity, brake)
         var deployConfig = new com.ctre.phoenix6.configs.TalonFXConfiguration();
         var deploySlot0 = new Slot0Configs();
-        deploySlot0.kP = 1.0;
-        deploySlot0.kI = 0.0;
-        deploySlot0.kD = 0.0;
-        deploySlot0.kV = 0.2;
+        deploySlot0.kP = Harvester.deploykP;
+        deploySlot0.kI = Harvester.deploykI;
+        deploySlot0.kD = Harvester.deploykD;
+        deploySlot0.kV = Harvester.deploykV;
         deployConfig.Slot0 = deploySlot0;
         deployConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         deployMotor.getConfigurator().apply(deployConfig);
@@ -33,14 +35,19 @@ public class HarvesterSubsystem extends SubsystemBase {
         // Spin motor config (velocity, coast)
         var spinConfig = new com.ctre.phoenix6.configs.TalonFXConfiguration();
         var spinSlot0 = new Slot0Configs();
-        spinSlot0.kP = 0.5;
-        spinSlot0.kI = 0.0;
-        spinSlot0.kD = 0.0;
-        spinSlot0.kV = 0.2;
+        spinSlot0.kP = Harvester.spinkP;
+        spinSlot0.kI = Harvester.spinkI;
+        spinSlot0.kD = Harvester.spinkD;
+        spinSlot0.kV = Harvester.spinkV;
         spinConfig.Slot0 = spinSlot0;
         spinConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         spinMotor.getConfigurator().apply(spinConfig);
         spinMotor.setNeutralMode(NeutralModeValue.Coast);
+    }
+
+    @Override
+    public void periodic() {
+        log();
     }
 
     // Deploy position control (rotations at output)
@@ -68,4 +75,15 @@ public class HarvesterSubsystem extends SubsystemBase {
     public void stopSpin() {
         spinMotor.stopMotor();
     }
+
+    public void log() {
+        // Deploy motor logging
+        SmartDashboard.putNumber("Harvester Deploy Position (rot, output)", deployMotor.getPosition().getValueAsDouble() / Harvester.DEPLOY_GEAR_RATIO);
+        SmartDashboard.putNumber("Harvester Deploy Velocity (RPS, output)", deployMotor.getVelocity().getValueAsDouble() / Harvester.DEPLOY_GEAR_RATIO);
+     
+        // Spin motor logging
+        SmartDashboard.putNumber("Harvester Spin Velocity (RPS, output)", spinMotor.getVelocity().getValueAsDouble() / Harvester.SPIN_GEAR_RATIO);
+    }
+
+    
 }

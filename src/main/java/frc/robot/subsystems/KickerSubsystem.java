@@ -1,10 +1,12 @@
-package frc.robot.subsystems.kicker;
+package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.Kicker;
 
@@ -19,11 +21,10 @@ public class KickerSubsystem extends SubsystemBase {
     var config = new com.ctre.phoenix6.configs.TalonFXConfiguration();
 
     var slot0Configs = new Slot0Configs();
-    slot0Configs.kV = 0.35; // Feedforward (Volts per RPS)
-    slot0Configs.kA = 0.0;
-    slot0Configs.kP = 0.8;
-    slot0Configs.kI = 0.0;
-    slot0Configs.kD = 0.0;
+    slot0Configs.kV = Kicker.kV; // Feedforward (Volts per RPS)
+    slot0Configs.kP = Kicker.kP; // Proportional gain
+    slot0Configs.kI = Kicker.kI; // Integral gain
+    slot0Configs.kD = Kicker.kD; // Derivative gain
 
     config.Slot0 = slot0Configs;
     config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
@@ -33,6 +34,11 @@ public class KickerSubsystem extends SubsystemBase {
     //Brake mode for kicker
     kickerMotor.setNeutralMode(NeutralModeValue.Brake);
   }
+
+  @Override
+    public void periodic() {
+        log();
+    }
 
   /**
    * Set the kickwheel velocity in rotations per second (RPS) at the output (wheel) shaft.
@@ -46,5 +52,9 @@ public class KickerSubsystem extends SubsystemBase {
 
   public void stop() {
     kickerMotor.stopMotor();
+  }
+
+  public void log() {
+    SmartDashboard.putNumber("Kicker Velocity (RPS)", kickerMotor.getVelocity().getValueAsDouble() / Kicker.KICKER_GEAR_RATIO);
   }
 }

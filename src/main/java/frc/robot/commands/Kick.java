@@ -1,8 +1,8 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.kicker.KickerSubsystem;
 import frc.robot.Constants.Kicker;
+import frc.robot.subsystems.KickerSubsystem;
 
 
 public class Kick extends Command {

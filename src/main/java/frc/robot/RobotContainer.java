@@ -7,16 +7,11 @@
 
 package frc.robot;
 
-import static frc.robot.subsystems.shooter.ShooterSubsystem.*;
 import static frc.robot.subsystems.vision.VisionConstants.*;
-import frc.robot.subsystems.kicker.KickerSubsystem;
-import frc.robot.commands.Kick;
 
-import frc.robot.subsystems.harvester.HarvesterSubsystem;
+import frc.robot.commands.Kick;
 import frc.robot.commands.HarvesterDeploy;
 import frc.robot.commands.HarvesterSpin;
-
-import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.commands.IndexerSpin;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -32,13 +27,16 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.Shoot;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.HarvesterSubsystem;
+import frc.robot.subsystems.IndexerSubsystem;
+import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
-import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
@@ -217,10 +215,7 @@ public class RobotContainer {
         new Shoot(
             shooter,
             // Flywheel Speed:
-            () -> -operatorJoystick.getZ(),
-            // Hood Speed:
-            // Keep at 0.0 (stationary)
-            () -> 0.0));
+            () -> -operatorJoystick.getZ()));
 
     // Kicker
     kick.whileTrue(

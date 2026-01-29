@@ -1,8 +1,8 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.harvester.HarvesterSubsystem;
-import frc.robot.Constants.Harvester;;
+import frc.robot.Constants.Harvester;
+import frc.robot.subsystems.HarvesterSubsystem;;
 
 public class HarvesterDeploy extends Command {
     private final HarvesterSubsystem harvester;
