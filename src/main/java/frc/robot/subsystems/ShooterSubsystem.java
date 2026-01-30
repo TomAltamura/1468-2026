@@ -12,6 +12,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.Shooter;
+import frc.robot.Constants;
 
 public class ShooterSubsystem extends SubsystemBase {
 
@@ -24,6 +25,8 @@ public class ShooterSubsystem extends SubsystemBase {
   private final PositionVoltage hoodPositionRequest = new PositionVoltage(0);
   private final VelocityVoltage hoodVelocityRequest = new VelocityVoltage(0);
   private final VelocityVoltage turretVelocityRequest = new VelocityVoltage(0);
+
+  private double targetTurretPositionRot = 0.0;
 
   public ShooterSubsystem() {
     // Flywheel config
@@ -89,6 +92,17 @@ public class ShooterSubsystem extends SubsystemBase {
     flywheelLead.setControl(leadRequest.withVelocity(velocityRPS));
   }
 
+    /**
+   * Check if the flywheel is at the target velocity within tolerance.
+   *
+   * @return true if flywheel velocity is within tolerance of target
+   */
+  public boolean isAtVelocity() {
+    double currentVelocity = flywheelLead.getVelocity().getValueAsDouble();
+    //TAKE A LOOK TO SEE IF SCALING IS NEEDED HERE
+    return Math.abs(currentVelocity - Shooter.FLYWHEEL_TARGET_RPS) < (Constants.VELOCITY_TOLERANCE_RPS);
+  }
+
   // Hood position (rotations at output)
   public void setHoodPosition(double rotations) {
     double motorRotations = rotations * Shooter.HOOD_GEAR_RATIO;
@@ -102,6 +116,7 @@ public class ShooterSubsystem extends SubsystemBase {
   }
   // Turret position (rotations at output)
   public void setTurretPosition(double rotations) {
+    this.targetTurretPositionRot = rotations;
     double motorRotations = rotations * Shooter.TURRET_GEAR_RATIO;
     turretMotor.setControl(new PositionVoltage(motorRotations));
   }
@@ -111,6 +126,18 @@ public class ShooterSubsystem extends SubsystemBase {
     double motorRPS = rps * Shooter.TURRET_GEAR_RATIO;
     turretMotor.setControl(turretVelocityRequest.withVelocity(motorRPS));
   }
+  //Turret position getter
+  public double getTurretPosition() {
+    return turretMotor.getPosition().getValueAsDouble() / Shooter.TURRET_GEAR_RATIO;
+  }
+
+  public boolean isTurretAtPosition() {
+    double currentPosition = getTurretPosition();
+    double toleranceRot = Math.toRadians(Shooter.TURRET_TRACKING_TOLERANCE_DEG) / (2 * Math.PI);
+    return Math.abs(currentPosition - targetTurretPositionRot) < toleranceRot;
+  }
+
+  
 
   public void stop() {
     flywheelLead.stopMotor();

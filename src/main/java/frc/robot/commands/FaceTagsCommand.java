@@ -1,3 +1,5 @@
+//THIS IS AI GENERATED. WE REALLY NEED TO TEST THIS TO SEE HOW IT WORKDS WITH THE APRIL TAGS
+//I SUGGEST PUTTING THIS ON 2 by 4 for testing and then set it on the ground
 package frc.robot.commands;
 
 import edu.wpi.first.math.controller.PIDController;
@@ -10,15 +12,20 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Constants.AutoAlign;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.drive.Drive;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 
 /**
- * Command that auto-rotates robot to face processor AprilTags. - Driver controls XY translation
- * (field-oriented) - Robot auto-rotates to face midpoint between tags - If vision sees tags,
- * auto-drives to 10 feet away - Uses real-time vision feedback to correct odometry drift
+ * Command that auto-rotates robot to face hub AprilTags.
+ * - Driver controls XY translation (field-oriented)
+ * - Robot auto-rotates to face midpoint between tags
+ * - If vision sees tags, auto-drives to target distance
+ * - Uses real-time vision feedback to correct odometry drift
  */
 public class FaceTagsCommand extends Command {
   private final Drive drive;
@@ -26,25 +33,19 @@ public class FaceTagsCommand extends Command {
   private final DoubleSupplier xSpeedSupplier;
   private final DoubleSupplier ySpeedSupplier;
 
-  // Target AprilTag IDs (processor station tags)
-  private static final int BLUE_TAG_1 = 9;
-  private static final int BLUE_TAG_2 = 10;
-  private static final int RED_TAG_1 = 25;
-  private static final int RED_TAG_2 = 26;
-
-  // Distance control
-  private static final double TARGET_DISTANCE = Units.feetToMeters(10.0); // 10 feet
-  private static final double DISTANCE_TOLERANCE = 0.3; // meters
-  private static final double VISION_DISTANCE_THRESHOLD =
-      Units.feetToMeters(15.0); // Only auto-drive if within 15ft
+  // Target AprilTag IDs (hub tags)
+  private static final List<Integer> RED_HUB_TAGS = List.of(25, 26);
+  private static final List<Integer> BLUE_HUB_TAGS = List.of(9, 10);
 
   // PID Controllers
-  private final PIDController rotationController = new PIDController(5.0, 0.0, 0.2);
-  private final PIDController distanceController = new PIDController(2.0, 0.0, 0.1);
+  private final PIDController rotationController =
+      new PIDController(AutoAlign.ROTATION_kP, AutoAlign.ROTATION_kI, AutoAlign.ROTATION_kD);
+  private final PIDController distanceController =
+      new PIDController(AutoAlign.DISTANCE_kP, AutoAlign.DISTANCE_kI, AutoAlign.DISTANCE_kD);
 
   // Target tracking
   private Translation2d targetMidpoint;
-  private int tag1Id, tag2Id;
+  private List<Integer> currentTagList;
   private boolean hasInitialized = false;
 
   /**
@@ -67,7 +68,10 @@ public class FaceTagsCommand extends Command {
 
     // Configure rotation controller
     rotationController.enableContinuousInput(-Math.PI, Math.PI);
-    rotationController.setTolerance(Units.degreesToRadians(2.0));
+    rotationController.setTolerance(Units.degreesToRadians(AutoAlign.ROTATION_TOLERANCE_DEG));
+
+    // Configure distance controller
+    distanceController.setTolerance(AutoAlign.DISTANCE_TOLERANCE_METERS);
   }
 
   @Override
@@ -77,44 +81,42 @@ public class FaceTagsCommand extends Command {
     // Determine which tags to target based on alliance
     Optional<Alliance> alliance = DriverStation.getAlliance();
     if (alliance.isEmpty()) {
-      SmartDashboard.putString("FaceProcessorTags/Status", "NO ALLIANCE");
+      SmartDashboard.putString("FaceTags/Status", "NO ALLIANCE");
       cancel();
       return;
     }
 
-    if (alliance.get() == Alliance.Blue) {
-      tag1Id = BLUE_TAG_1;
-      tag2Id = BLUE_TAG_2;
-    } else {
-      tag1Id = RED_TAG_1;
-      tag2Id = RED_TAG_2;
+    // Select tag list based on alliance
+    currentTagList =
+        alliance.get() == Alliance.Red ? RED_HUB_TAGS : BLUE_HUB_TAGS;
+
+    // Get tag positions from field layout and calculate midpoint
+    List<Translation2d> tagPositions = new ArrayList<>();
+    for (int tagId : currentTagList) {
+      var tagPose = vision.getFieldLayout().getTagPose(tagId);
+      if (tagPose.isPresent()) {
+        tagPositions.add(tagPose.get().toPose2d().getTranslation());
+      }
     }
 
-    // Get tag positions from field layout
-    var tag1Pose = vision.getFieldLayout().getTagPose(tag1Id);
-    var tag2Pose = vision.getFieldLayout().getTagPose(tag2Id);
-
-    if (tag1Pose.isEmpty() || tag2Pose.isEmpty()) {
-      SmartDashboard.putString("FaceProcessorTags/Status", "TAGS NOT IN LAYOUT");
+    if (tagPositions.isEmpty()) {
+      SmartDashboard.putString("FaceTags/Status", "TAGS NOT IN LAYOUT");
       cancel();
       return;
     }
 
-    // Calculate midpoint between the two tags
-    Translation2d tag1Pos = tag1Pose.get().toPose2d().getTranslation();
-    Translation2d tag2Pos = tag2Pose.get().toPose2d().getTranslation();
-    targetMidpoint = tag1Pos.plus(tag2Pos).div(2.0);
+    // Calculate midpoint between all visible tags
+    targetMidpoint = calculateMidpoint(tagPositions);
 
     // Reset controllers
     rotationController.reset();
     distanceController.reset();
 
     hasInitialized = true;
-    SmartDashboard.putString("FaceProcessorTags/Status", "ACTIVE");
-    SmartDashboard.putNumber("FaceProcessorTags/Tag1ID", tag1Id);
-    SmartDashboard.putNumber("FaceProcessorTags/Tag2ID", tag2Id);
+    SmartDashboard.putString("FaceTags/Status", "ACTIVE");
+    SmartDashboard.putString("FaceTags/TargetTags", currentTagList.toString());
     SmartDashboard.putString(
-        "FaceProcessorTags/TargetMidpoint",
+        "FaceTags/TargetMidpoint",
         String.format("X=%.2f Y=%.2f", targetMidpoint.getX(), targetMidpoint.getY()));
   }
 
@@ -131,18 +133,13 @@ public class FaceTagsCommand extends Command {
     double currentDistance = robotToTarget.getNorm();
     Rotation2d desiredHeading = robotToTarget.getAngle();
 
-    // Check if we can see either target tag
-    boolean seesTag1 =
-        (vision.frontCameraHasTargets() && vision.getFrontCameraBestTargetId() == tag1Id)
-            || (vision.backCameraHasTargets() && vision.getBackCameraBestTargetId() == tag1Id);
-    boolean seesTag2 =
-        (vision.frontCameraHasTargets() && vision.getFrontCameraBestTargetId() == tag2Id)
-            || (vision.backCameraHasTargets() && vision.getBackCameraBestTargetId() == tag2Id);
-    boolean seesAnyTag = seesTag1 || seesTag2;
+    // Check if we can see any target tags
+    List<Integer> visibleTags = getVisibleTags();
+    boolean seesAnyTag = !visibleTags.isEmpty();
 
     // Update target midpoint from vision if we see tags (real-time correction)
     if (seesAnyTag) {
-      Translation2d visionCorrectedMidpoint = calculateVisionCorrectedMidpoint();
+      Translation2d visionCorrectedMidpoint = calculateVisionCorrectedMidpoint(visibleTags);
       if (visionCorrectedMidpoint != null) {
         targetMidpoint = visionCorrectedMidpoint;
         robotToTarget = targetMidpoint.minus(robotPosition);
@@ -165,11 +162,13 @@ public class FaceTagsCommand extends Command {
     // 2. We're within reasonable range
     // 3. Driver isn't providing forward/back input
     boolean shouldAutoDrive =
-        seesAnyTag && currentDistance < VISION_DISTANCE_THRESHOLD && Math.abs(xSpeed) < 0.1;
+        seesAnyTag
+            && currentDistance < AutoAlign.VISION_DISTANCE_THRESHOLD_METERS
+            && Math.abs(xSpeed) < 0.1;
 
     if (shouldAutoDrive) {
       // Override X speed to maintain target distance
-      double distanceError = currentDistance - TARGET_DISTANCE;
+      double distanceError = currentDistance - AutoAlign.HUB_DISTANCE_METERS;
       double autoXSpeed = distanceController.calculate(0, -distanceError);
 
       // Limit auto speed
@@ -178,10 +177,10 @@ public class FaceTagsCommand extends Command {
       // Blend with driver input (driver can still strafe)
       xSpeed = autoXSpeed;
 
-      SmartDashboard.putBoolean("FaceProcessorTags/AutoDriving", true);
-      SmartDashboard.putNumber("FaceProcessorTags/AutoXSpeed", autoXSpeed);
+      SmartDashboard.putBoolean("FaceTags/AutoDriving", true);
+      SmartDashboard.putNumber("FaceTags/AutoXSpeed", autoXSpeed);
     } else {
-      SmartDashboard.putBoolean("FaceProcessorTags/AutoDriving", false);
+      SmartDashboard.putBoolean("FaceTags/AutoDriving", false);
     }
 
     // Limit rotation speed
@@ -195,55 +194,96 @@ public class FaceTagsCommand extends Command {
     drive.runVelocity(fieldRelativeSpeeds);
 
     // Logging
-    SmartDashboard.putNumber("FaceProcessorTags/CurrentDistance", currentDistance);
-    SmartDashboard.putNumber("FaceProcessorTags/TargetDistance", TARGET_DISTANCE);
-    SmartDashboard.putNumber("FaceProcessorTags/DesiredHeading", desiredHeading.getDegrees());
+    SmartDashboard.putNumber("FaceTags/CurrentDistance", currentDistance);
+    SmartDashboard.putNumber("FaceTags/TargetDistance", AutoAlign.HUB_DISTANCE_METERS);
+    SmartDashboard.putNumber("FaceTags/DesiredHeading", desiredHeading.getDegrees());
     SmartDashboard.putNumber(
-        "FaceProcessorTags/CurrentHeading", currentPose.getRotation().getDegrees());
+        "FaceTags/CurrentHeading", currentPose.getRotation().getDegrees());
     SmartDashboard.putNumber(
-        "FaceProcessorTags/HeadingError",
+        "FaceTags/HeadingError",
         desiredHeading.minus(currentPose.getRotation()).getDegrees());
-    SmartDashboard.putNumber("FaceProcessorTags/RotationSpeed", rotationSpeed);
-    SmartDashboard.putBoolean("FaceProcessorTags/SeesTag1", seesTag1);
-    SmartDashboard.putBoolean("FaceProcessorTags/SeesTag2", seesTag2);
+    SmartDashboard.putNumber("FaceTags/RotationSpeed", rotationSpeed);
+    SmartDashboard.putString("FaceTags/VisibleTags", visibleTags.toString());
     SmartDashboard.putBoolean(
-        "FaceProcessorTags/AtTargetDistance",
-        Math.abs(currentDistance - TARGET_DISTANCE) < DISTANCE_TOLERANCE);
-    SmartDashboard.putBoolean("FaceProcessorTags/AtTargetHeading", rotationController.atSetpoint());
+        "FaceTags/AtTargetDistance",
+        Math.abs(currentDistance - AutoAlign.HUB_DISTANCE_METERS)
+            < AutoAlign.DISTANCE_TOLERANCE_METERS);
+    SmartDashboard.putBoolean(
+        "FaceTags/AtTargetHeading", rotationController.atSetpoint());
   }
 
   /**
-   * Calculate vision-corrected midpoint between tags using actual vision measurements. This
-   * provides real-time feedback to correct odometry drift.
+   * Get list of visible tags from both cameras.
+   *
+   * @return List of tag IDs that are currently visible and in our target list
    */
-  private Translation2d calculateVisionCorrectedMidpoint() {
-    // Get the latest vision pose estimates that include the target tags
-    Optional<Translation2d> tag1PosFromVision = getTagPositionFromVision(tag1Id);
-    Optional<Translation2d> tag2PosFromVision = getTagPositionFromVision(tag2Id);
+  private List<Integer> getVisibleTags() {
+    List<Integer> visibleTags = new ArrayList<>();
 
-    // If we see both tags, use their actual positions
-    if (tag1PosFromVision.isPresent() && tag2PosFromVision.isPresent()) {
-      return tag1PosFromVision.get().plus(tag2PosFromVision.get()).div(2.0);
+    for (int tagId : currentTagList) {
+      boolean frontSeesTag =
+          vision.frontCameraHasTargets() && vision.getFrontCameraBestTargetId() == tagId;
+      boolean backSeesTag =
+          vision.backCameraHasTargets() && vision.getBackCameraBestTargetId() == tagId;
+
+      if (frontSeesTag || backSeesTag) {
+        visibleTags.add(tagId);
+      }
     }
 
-    // If we see one tag, offset from its position
-    if (tag1PosFromVision.isPresent()) {
-      // Estimate tag2 position based on known offset
-      Translation2d knownOffset = getKnownTagOffset();
-      return tag1PosFromVision.get().plus(knownOffset.div(2.0));
-    }
-
-    if (tag2PosFromVision.isPresent()) {
-      Translation2d knownOffset = getKnownTagOffset();
-      return tag2PosFromVision.get().minus(knownOffset.div(2.0));
-    }
-
-    return null; // No vision correction available
+    return visibleTags;
   }
 
   /**
-   * Get tag position from vision measurements by combining: - Current robot pose estimate (from
-   * odometry + vision fusion) - Known tag position in field layout
+   * Calculate vision-corrected midpoint between visible tags using actual vision measurements.
+   *
+   * @param visibleTags List of currently visible tag IDs
+   * @return Vision-corrected midpoint, or null if no correction available
+   */
+  private Translation2d calculateVisionCorrectedMidpoint(List<Integer> visibleTags) {
+    List<Translation2d> tagPositions = new ArrayList<>();
+
+    for (int tagId : visibleTags) {
+      Optional<Translation2d> tagPos = getTagPositionFromVision(tagId);
+      if (tagPos.isPresent()) {
+        tagPositions.add(tagPos.get());
+      }
+    }
+
+    if (tagPositions.isEmpty()) {
+      return null;
+    }
+
+    return calculateMidpoint(tagPositions);
+  }
+
+  /**
+   * Calculate midpoint from a list of positions.
+   *
+   * @param positions List of 2D positions
+   * @return Midpoint (average) of all positions
+   */
+  private Translation2d calculateMidpoint(List<Translation2d> positions) {
+    if (positions.isEmpty()) {
+      return new Translation2d();
+    }
+
+    double sumX = 0.0;
+    double sumY = 0.0;
+
+    for (Translation2d pos : positions) {
+      sumX += pos.getX();
+      sumY += pos.getY();
+    }
+
+    return new Translation2d(sumX / positions.size(), sumY / positions.size());
+  }
+
+  /**
+   * Get tag position from vision measurements.
+   *
+   * @param tagId The AprilTag ID
+   * @return Optional containing tag position from field layout
    */
   private Optional<Translation2d> getTagPositionFromVision(int tagId) {
     // Check if either camera sees this tag
@@ -256,31 +296,16 @@ public class FaceTagsCommand extends Command {
       return Optional.empty();
     }
 
-    // Use field layout position (this is already corrected by vision fusion in Drive subsystem)
+    // Use field layout position (already corrected by vision fusion in Drive subsystem)
     var tagPose = vision.getFieldLayout().getTagPose(tagId);
     return tagPose.map(pose3d -> pose3d.toPose2d().getTranslation());
-  }
-
-  /** Get known offset between the two processor tags. */
-  private Translation2d getKnownTagOffset() {
-    var tag1Pose = vision.getFieldLayout().getTagPose(tag1Id);
-    var tag2Pose = vision.getFieldLayout().getTagPose(tag2Id);
-
-    if (tag1Pose.isPresent() && tag2Pose.isPresent()) {
-      return tag2Pose
-          .get()
-          .toPose2d()
-          .getTranslation()
-          .minus(tag1Pose.get().toPose2d().getTranslation());
-    }
-
-    return new Translation2d(); // Zero offset if unknown
   }
 
   @Override
   public void end(boolean interrupted) {
     drive.stop();
-    SmartDashboard.putString("FaceProcessorTags/Status", interrupted ? "INTERRUPTED" : "FINISHED");
+    SmartDashboard.putString(
+        "FaceTags/Status", interrupted ? "INTERRUPTED" : "FINISHED");
   }
 
   @Override

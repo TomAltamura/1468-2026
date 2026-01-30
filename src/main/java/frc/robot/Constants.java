@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
@@ -29,7 +30,31 @@ public final class Constants {
     REPLAY
   }
 
-  // Shooter
+  public static final double VELOCITY_TOLERANCE_RPS = 2.0;
+
+  //////////////////////////    VISION / AUTO ALIGNMENT     /////////////////////////////////////////
+
+public static final class AutoAlign {
+  // Rotation PID (for aligning robot to face AprilTags)
+  public static final double ROTATION_kP = 5.0;
+  public static final double ROTATION_kI = 0.0;
+  public static final double ROTATION_kD = 0.2;
+  public static final double ROTATION_TOLERANCE_DEG = 2.0;
+
+  // Distance PID (for maintaining distance from AprilTags)
+  public static final double DISTANCE_kP = 2.0;
+  public static final double DISTANCE_kI = 0.0;
+  public static final double DISTANCE_kD = 0.1;
+  public static final double DISTANCE_TOLERANCE_METERS = 0.3;
+
+  // Target distances
+  public static final double HUB_DISTANCE_METERS = Units.feetToMeters(10.0);
+  public static final double VISION_DISTANCE_THRESHOLD_METERS = Units.feetToMeters(15.0);
+}
+
+
+  //////////////////////////    SHOOTER     /////////////////////////////////////////
+  
   public static final class Shooter {
     public static final int FLYWHEEL_LEAD_ID = 20;
     public static final int FLYWHEEL_FOLLOWER_ID = 21;
@@ -40,14 +65,20 @@ public final class Constants {
     public static final double HOOD_GEAR_RATIO = 1.0;
     public static final double TURRET_GEAR_RATIO = 1.0;
 
+      //////////////////////////    FLYWHEEL     /////////////////////////////////////////
     // TODO: Tune these values (flywheel)
+  
     public static final double SHOOT_kP = 0.89;
     public static final double SHOOT_kI = 0.0;
     public static final double SHOOT_kD = 0.0;
     public static final double SHOOT_kV = 0.37;
     public static final double SHOOT_kA = 0.43;
 
+    public static final double FLYWHEEL_TARGET_RPS = 50.0; // NEED TO INSERT
+
+    //////////////////////////    HOOD     /////////////////////////////////////////
     // Hood PID and soft stops (hood)
+  
     public static final double HOOD_kP = 0.5;
     public static final double HOOD_kI = 0.0;
     public static final double HOOD_kD = 0.0;
@@ -55,16 +86,23 @@ public final class Constants {
     public static final double HOOD_TOP_SOFT_LIMIT_ROT = 10.0;
     public static final double HOOD_BOTTOM_SOFT_LIMIT_ROT = 0.0;
 
+    //////////////////////////    TURRET     /////////////////////////////////////////
     // Turret PID and soft stops (Turret)
+  
     public static final double TURRET_kP = 0.5;
     public static final double TURRET_kI = 0.0;
     public static final double TURRET_kD = 0.0;
     public static final double TURRET_kV = 0.0;
     public static final double TURRET_RIGHT_SOFT_LIMIT_ROT = 5.0;
     public static final double TURRET_LEFT_SOFT_LIMIT_ROT = -5.0;
+
+    public static final double TURRET_TRACKING_TOLERANCE_DEG = 5.0; // DEGREE TOLERANCE
+    public static final double TURRET_MAX_VELOCITY_RPS = 5.0; // Max turret rotation speed
+
   }
 
-  // Kicker
+  //////////////////////////    KICKER     /////////////////////////////////////////
+  
   public static final class Kicker {
     public static final int KICKER_MOTOR_ID = 30;
     public static final double KICKER_TARGET_RPS = 30.0;
@@ -78,7 +116,8 @@ public final class Constants {
     public static final double kA = 0.43;
   }
 
-  // Harvester
+  //////////////////////////    HARVESTER     /////////////////////////////////////////
+  
   public static final class Harvester {
     public static final int DEPLOY_MOTOR_ID = 40;
     public static final int SPIN_MOTOR_ID = 41;
@@ -100,7 +139,8 @@ public final class Constants {
     public static final double spinkV = 0.37;
   }
 
-  // Indexer
+  //////////////////////////    INDEXER     /////////////////////////////////////////
+  
   public static final class Indexer {
     public static final int MOTOR_ID = 50;
     public static final double GEAR_RATIO = 1.0; // NEED TO INSERT
@@ -116,7 +156,8 @@ public final class Constants {
     public static final double kV = 0.37;
   }
 
-  // Climber
+  //////////////////////////    CLIMBER     /////////////////////////////////////////'
+  
   public static final class Climber {
     public static final int LEFT_MOTOR_ID = 60;
     public static final int RIGHT_MOTOR_ID = 61;

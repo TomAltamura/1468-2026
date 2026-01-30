@@ -8,6 +8,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.Kicker;
+import frc.robot.Constants;
 
 public class KickerSubsystem extends SubsystemBase {
 
@@ -48,6 +49,11 @@ public class KickerSubsystem extends SubsystemBase {
     // Convert wheel RPS to motor RPS using gear reduction
     double motorRPS = velocityRPS * Kicker.KICKER_GEAR_RATIO;
     kickerMotor.setControl(velocityRequest.withVelocity(motorRPS));
+  }
+
+  public boolean isAtVelocity() {
+    double currentVelocity = kickerMotor.getVelocity().getValueAsDouble();
+    return Math.abs(currentVelocity - Kicker.KICKER_TARGET_RPS) < Constants.VELOCITY_TOLERANCE_RPS;
   }
 
   public void stop() {
