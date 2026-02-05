@@ -7,9 +7,6 @@
 
 package frc.robot;
 
-import static frc.robot.subsystems.shooter.ShooterSubsystem.*;
-import static frc.robot.subsystems.vision.VisionConstants.*;
-
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -21,19 +18,25 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.FaceTagsCommand;
+import frc.robot.commands.HarvesterDeploy;
+import frc.robot.commands.HarvesterSpin;
+import frc.robot.commands.IndexerSpin;
+import frc.robot.commands.Kick;
 import frc.robot.commands.Shoot;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.HarvesterSubsystem;
+import frc.robot.subsystems.IndexerSubsystem;
+import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.LEDSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
-import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.vision.Vision;
-import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;
-import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -46,7 +49,11 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final ShooterSubsystem shooter;
-  private final Vision vision;
+  private final VisionSubsystem vision;
+  private final KickerSubsystem kicker;
+  private final HarvesterSubsystem harvester;
+  private final IndexerSubsystem indexer;
+  private final LEDSubsystem led;
 
   // Controller
   final Joystick driverRightJoystick = new Joystick(1);
@@ -60,6 +67,10 @@ public class RobotContainer {
   public RobotContainer() {
 
     shooter = new ShooterSubsystem();
+    kicker = new KickerSubsystem();
+    harvester = new HarvesterSubsystem();
+    indexer = new IndexerSubsystem();
+    led = new LEDSubsystem();
 
     switch (Constants.currentMode) {
       case REAL:
@@ -74,11 +85,7 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
 
-        vision =
-            new Vision(
-                drive::addVisionMeasurement,
-                new VisionIOPhotonVision(camera0Name, robotToCamera0),
-                new VisionIOPhotonVision(camera1Name, robotToCamera1));
+        vision = new VisionSubsystem(drive);
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The
@@ -109,12 +116,7 @@ public class RobotContainer {
                 new ModuleIOSim(TunerConstants.BackLeft),
                 new ModuleIOSim(TunerConstants.BackRight));
 
-        vision =
-            new Vision(
-                drive::addVisionMeasurement,
-                new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
-                new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose));
-
+        vision = new VisionSubsystem(drive);
         break;
 
       default:
@@ -127,7 +129,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
 
-        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+        vision = new VisionSubsystem(drive);
 
         break;
     }
@@ -163,9 +165,14 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
 
+    // TODO: Decide on final button mappings
     final JoystickButton resetGyro = new JoystickButton(driverRightJoystick, 7);
     final JoystickButton lockToZero = new JoystickButton(driverRightJoystick, 9);
     final JoystickButton shoot = new JoystickButton(operatorJoystick, 1);
+    final JoystickButton kick = new JoystickButton(operatorJoystick, 2);
+    final JoystickButton harvesterDeploy = new JoystickButton(operatorJoystick, 3);
+    final JoystickButton harvesterSpin = new JoystickButton(operatorJoystick, 4);
+    final JoystickButton indexerSpin = new JoystickButton(operatorJoystick, 5);
 
     // Default command, normal field-relative drive
     drive.setDefaultCommand(
@@ -183,6 +190,12 @@ public class RobotContainer {
             () -> -driverLeftJoystick.getX(),
             () -> new Rotation2d()));
 
+    // Drive facing april tag
+    final JoystickButton faceProcessorButton = new JoystickButton(driverRightJoystick, 7);
+    faceProcessorButton.whileTrue(
+        new FaceTagsCommand(
+            drive, vision, () -> -driverLeftJoystick.getY(), () -> -driverLeftJoystick.getX()));
+
     // Reset gyro to 0° when 7 on right joystick button is pressed
     resetGyro.onTrue(
         Commands.runOnce(
@@ -195,10 +208,19 @@ public class RobotContainer {
         new Shoot(
             shooter,
             // Flywheel Speed:
-            () -> -operatorJoystick.getZ(),
-            // Hood Speed:
-            // Keep at 0.0 (stationary)
-            () -> 0.0));
+            () -> -operatorJoystick.getZ()));
+
+    // Kicker
+    kick.whileTrue(new Kick(kicker));
+
+    // Harvester Deploy
+    harvesterDeploy.whileTrue(new HarvesterDeploy(harvester));
+
+    // Harvester Spin
+    harvesterSpin.whileTrue(new HarvesterSpin(harvester));
+
+    // Indexer Spin
+    indexerSpin.whileTrue(new IndexerSpin(indexer));
   }
 
   /**
